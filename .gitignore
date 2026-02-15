@@ -1,0 +1,49 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code related
+.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Android related
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/android/app/src/main/assets/
+!**/android/app/src/main/assets/Logo_tito_android.jpg
+!**/android/app/src/main/assets/logo_tito.png
+!**/android/app/src/main/assets/Tito_sinfondo.png
+
+# Generated files
+lib/generated_plugin_registrant.dart
+
+# Private keys and secrets
+*.jks
+*.keystore
+key.properties
+google-services.json
