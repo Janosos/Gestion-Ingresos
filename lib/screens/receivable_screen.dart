@@ -5,6 +5,7 @@ import '../providers/receivable_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../models/receivable_model.dart';
 import '../models/transaction_model.dart';
+import '../widgets/add_receivable_sheet.dart';
 
 class ReceivableScreen extends StatelessWidget {
   const ReceivableScreen({super.key});
@@ -43,11 +44,11 @@ class ReceivableScreen extends StatelessWidget {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF137FEC), Color(0xFF2563EB)],
+                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)], // Use yellow/amber
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF137FEC).withOpacity(0.2),
+                        color: const Color(0xFFF59E0B).withOpacity(0.2), // Use yellow/amber
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -106,8 +107,8 @@ class ReceivableScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddReceivableDialog(context),
-        backgroundColor: Theme.of(context).primaryColor,
+        onPressed: () => _showAddReceivableSheet(context),
+        backgroundColor: const Color(0xFFF59E0B), // Use same yellow
         child: const Icon(Icons.add, size: 32, color: Colors.white),
       ),
     );
@@ -177,13 +178,9 @@ class ReceivableScreen extends StatelessWidget {
                  final debts = provider.groupedReceivables[clientName] ?? [];
                  final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '\$');
 
-                 if (debts.isEmpty) {
-                   // If all debts deleted, close grouped view probably? Or show empty
-                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                     if (context.mounted) Navigator.pop(context); 
-                   });
-                   return const SizedBox();
-                 }
+                   if (debts.isEmpty) {
+                     return const SizedBox();
+                   }
 
                  return Column(
                    children: [
@@ -233,7 +230,7 @@ class ReceivableScreen extends StatelessWidget {
                                    const SizedBox(width: 8),
                                    IconButton(
                                      icon: const Icon(Icons.add_circle, color: Color(0xFF2563EB), size: 32),
-                                     onPressed: () => _showAddReceivableDialog(context, prefilledName: clientName),
+                                     onPressed: () => _showAddReceivableSheet(context, prefilledName: clientName),
                                    ),
                                  ],
                                )
@@ -338,10 +335,7 @@ class ReceivableScreen extends StatelessWidget {
     );
   }
 
-  void _showAddReceivableDialog(BuildContext context, {String? prefilledName}) {
-    final nameController = TextEditingController(text: prefilledName);
-    final amountController = TextEditingController();
-
+  void _showAddReceivableSheet(BuildContext context, {String? prefilledName}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -349,64 +343,7 @@ class ReceivableScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Nuevo Pendiente', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-              decoration: InputDecoration(
-                prefixText: '\$ ',
-                prefixStyle: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.grey),
-                hintText: '0.00',
-                hintStyle: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.grey.withOpacity(0.3)),
-                border: InputBorder.none,
-              ),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: nameController,
-              enabled: prefilledName == null, // Lock if adding to existing
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Nombre del Cliente',
-                labelStyle: const TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                final amount = double.tryParse(amountController.text);
-                if (amount == null || nameController.text.isEmpty) return;
-                
-                Provider.of<ReceivableProvider>(context, listen: false).addReceivable(nameController.text, amount);
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text('Guardar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
+      builder: (context) => AddReceivableSheet(prefilledName: prefilledName),
     );
   }
 

@@ -3,6 +3,7 @@ import 'income_screen.dart';
 import 'dashboard_screen.dart';
 import 'receivable_screen.dart';
 import 'supplier_screen.dart'; 
+import 'calculator_screen.dart'; // Import this
 import 'settings_screen.dart'; // Import this
 
 class MainScaffold extends StatefulWidget {
@@ -20,6 +21,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     const IncomeScreen(),    // Ingresos
     const SupplierScreen(),  // Proveedores
     const ReceivableScreen(), // Cobrar
+    const CalculatorScreen(), // Calculadora
     const SettingsScreen(),   // Ajustes
   ];
 
@@ -49,7 +51,8 @@ class _MainScaffoldState extends State<MainScaffold> {
             _buildNavItem(Icons.account_balance_wallet, 'Ingresos', 1),
             _buildNavItem(Icons.local_shipping, 'Prov.', 2),
              _buildNavItem(Icons.pending_actions, 'Cobrar', 3), // Using pending_actions for Cobrar
-            _buildNavItem(Icons.settings, 'Ajustes', 4),
+            _buildNavItem(Icons.calculate, 'Calc.', 4),
+            _buildNavItem(Icons.settings, 'Ajustes', 5),
           ],
         ),
       ),
@@ -64,13 +67,13 @@ class _MainScaffoldState extends State<MainScaffold> {
     return InkWell(
       onTap: () => _onItemTapped(index),
       child: SizedBox(
-        width: 64, // Touch target
+        width: 50, // Reduced touch target to fit more items
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 28),
+            Icon(icon, color: color, size: 24), // Slightly smaller icon
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w500)),
+            Text(label, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w500)), // Smaller text
           ],
         ),
       ),

@@ -5,7 +5,8 @@ import '../providers/transaction_provider.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   final TransactionType type;
-  const AddTransactionSheet({super.key, required this.type});
+  final double? initialAmount;
+  const AddTransactionSheet({super.key, required this.type, this.initialAmount});
 
   @override
   State<AddTransactionSheet> createState() => _AddTransactionSheetState();
@@ -20,6 +21,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   @override
   void initState() {
     super.initState();
+    // Pre-fill amount if provided
+    if (widget.initialAmount != null) {
+      _amountController.text = widget.initialAmount.toString();
+    }
+
     // Set default category based on type
     if (widget.type == TransactionType.income) {
       _selectedCategory = TransactionCategory.salesCash;
