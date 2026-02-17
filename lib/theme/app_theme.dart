@@ -45,6 +45,17 @@ class AppTheme {
 
 
       iconTheme: const IconThemeData(color: textLight),
+      datePickerTheme: const DatePickerThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        headerBackgroundColor: primary,
+        headerForegroundColor: Colors.white,
+        dayStyle: TextStyle(color: textLight),
+        yearStyle: TextStyle(color: textLight),
+        weekdayStyle: TextStyle(color: textMutedLight),
+        dayForegroundColor: MaterialStatePropertyAll(textLight),
+        todayForegroundColor: MaterialStatePropertyAll(primary),
+      ),
     );
   }
 

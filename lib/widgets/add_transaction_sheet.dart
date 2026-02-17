@@ -6,7 +6,14 @@ import '../providers/transaction_provider.dart';
 class AddTransactionSheet extends StatefulWidget {
   final TransactionType type;
   final double? initialAmount;
-  const AddTransactionSheet({super.key, required this.type, this.initialAmount});
+  final TransactionCategory? forceCategory;
+
+  const AddTransactionSheet({
+    super.key, 
+    required this.type, 
+    this.initialAmount,
+    this.forceCategory,
+  });
 
   @override
   State<AddTransactionSheet> createState() => _AddTransactionSheetState();
@@ -22,16 +29,19 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   void initState() {
     super.initState();
     // Pre-fill amount if provided
-    if (widget.initialAmount != null) {
+    // Pre-fill amount if provided and > 0
+    if (widget.initialAmount != null && widget.initialAmount! > 0) {
       _amountController.text = widget.initialAmount.toString();
     }
 
-    // Set default category based on type
-    if (widget.type == TransactionType.income) {
+    if (widget.forceCategory != null) {
+      _selectedCategory = widget.forceCategory;
+    } else if (widget.type == TransactionType.income) {
       _selectedCategory = TransactionCategory.salesCash;
       _titleController.text = 'Venta';
     } else {
-      _selectedCategory = TransactionCategory.supplier;
+      // Default to Various for general expenses
+      _selectedCategory = TransactionCategory.various;
     }
   }
 
@@ -42,10 +52,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -77,11 +88,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           // Title Input
           TextField(
             controller: _titleController,
-            readOnly: isIncome, // Fixed to Venta for Income
+            // Only Income title (Venta) is read-only. Supplier expenses should be editable.
+            readOnly: isIncome,
             style: TextStyle(color: isIncome ? Colors.grey : Colors.white),
             decoration: InputDecoration(
-              labelText: 'Concepto',
+              labelText: 'Concepto', 
               labelStyle: const TextStyle(color: Colors.grey),
+              hintText: isIncome ? 'Venta' : 'Gasto Varios', // Add hint
               filled: true,
               fillColor: Colors.white.withOpacity(0.05),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -94,7 +107,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               controller: _descriptionController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Comentarios (Opcional)',
+                labelText: 'Comentarios',
                 labelStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white.withOpacity(0.05),
@@ -104,25 +117,34 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             ),
             const SizedBox(height: 24),
           ],
-          
-          if (!isIncome) const SizedBox(height: 24),
 
           // Category Selection
-          const Text('Tipo', style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            children: isIncome 
-              ? [
-                  _buildCategoryChip(TransactionCategory.salesCash, 'Efectivo', Icons.payments),
-                  _buildCategoryChip(TransactionCategory.salesCard, 'Tarjeta', Icons.credit_card),
-                  _buildCategoryChip(TransactionCategory.salesTransfer, 'Transferencia', Icons.account_balance),
-                ]
-              : [
-                  _buildCategoryChip(TransactionCategory.supplier, 'Proveedor', Icons.local_shipping),
-                  _buildCategoryChip(TransactionCategory.various, 'Varios', Icons.receipt_long),
-                ],
-          ),
+          if (isIncome || widget.forceCategory != null) ...[
+            const SizedBox(height: 24),
+            const Text('Tipo', style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              children: isIncome
+                  ? [
+                      _buildCategoryChip(TransactionCategory.salesCash, 'Efectivo', Icons.payments),
+                      _buildCategoryChip(TransactionCategory.salesCard, 'Tarjeta', Icons.credit_card),
+                      _buildCategoryChip(TransactionCategory.salesTransfer, 'Transferencia', Icons.account_balance),
+                    ]
+                  : [
+                      // If forceCategory is set, only show that one, and make it unselectable
+                      if (widget.forceCategory == TransactionCategory.supplier)
+                        _buildCategoryChip(TransactionCategory.supplier, 'Proveedor', Icons.local_shipping, disabled: true),
+                      // If forceCategory is null, but it's an expense, we default to 'Varios' and hide the selector.
+                      // So this else branch should only be hit if forceCategory is not null and not supplier (e.g., future categories)
+                      // For now, this branch is effectively only for forceCategory == supplier.
+                    ],
+            ),
+          ],
+          // If it's an expense and forceCategory is null, we hide the category selector
+          // because it's implicitly 'Varios'.
+          if (!isIncome && widget.forceCategory == null) const SizedBox(height: 24),
+
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: _submit,
@@ -135,10 +157,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           ),
         ],
       ),
+    ),
     );
   }
 
-  Widget _buildCategoryChip(TransactionCategory category, String label, IconData icon) {
+  Widget _buildCategoryChip(TransactionCategory category, String label, IconData icon, {bool disabled = false}) {
     final isSelected = _selectedCategory == category;
     final color = Theme.of(context).primaryColor;
     return ChoiceChip(
@@ -151,7 +174,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         ],
       ),
       selected: isSelected,
-      onSelected: (selected) {
+      onSelected: disabled ? null : (selected) {
         if (selected) setState(() => _selectedCategory = category);
       },
       backgroundColor: Colors.white.withOpacity(0.05),
@@ -166,10 +189,35 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   void _submit() {
     final amount = double.tryParse(_amountController.text);
-    if (amount == null || _titleController.text.isEmpty || _selectedCategory == null) return;
+    // Validate amount and category. 
+    if (amount == null || _selectedCategory == null) return;
     
+    // For Income, Title is fixed to "Venta" (set in initState).
+    // For Expense, Title is User Input OR "Gasto Varios" default.
+    String title = _titleController.text.trim();
+    
+    if (widget.type == TransactionType.income) {
+       title = 'Venta'; 
+    } else if (title.isEmpty) {
+       // If expense and empty title, default based on category or generic
+       if (_selectedCategory == TransactionCategory.supplier) {
+         title = 'Pago a Proveedor';
+       } else {
+         title = 'Gasto Varios';
+       }
+    }
+
     final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final date = provider.selectedDate;
+    // Use selected date from provider for the transaction date (preserving time if needed, or just set to now?)
+    // Logic in provider adds it to the list. 
+    // Wait, previous logic was: use provider.selectedDate combined with TimeOfDay.now().
+    // If we are in Range mode, `selectedDate` might be start of range or something.
+    // Provider.selectedDate is still the reference for "Today" if filtering by day.
+    // If filtering by Range, what date should the transaction have?
+    // User didn't specify. Usually "Today" or the date explicitly chosen.
+    // Let's use provider.selectedDate if Day mode, else DateTime.now().
+    
+    final date = provider.filterType == DateFilterType.day ? provider.selectedDate : DateTime.now();
     
     final now = DateTime.now();
     final transactionDate = DateTime(
@@ -183,7 +231,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
     final tx = Transaction(
       id: DateTime.now().toString(),
-      title: _titleController.text,
+      title: title,
       amount: amount,
       date: transactionDate,
       type: widget.type,

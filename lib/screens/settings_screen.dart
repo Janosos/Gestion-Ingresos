@@ -108,7 +108,7 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Text(
-                'Desarrollado por ImperioDev V1.0.0',
+                'Desarrollado por ImperioDev V1.2.8',
                 style: TextStyle(
                   color: Colors.grey.shade500,
                   fontSize: 12,

@@ -96,98 +96,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDateFilters(TransactionProvider provider) {
-     return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildFilterChip('Hoy', DateFilterType.day, provider),
-          const SizedBox(width: 8),
-          _buildFilterChip('Esta Semana', DateFilterType.week, provider),
-          const SizedBox(width: 8),
-          _buildFilterChip('Este Mes', DateFilterType.month, provider),
-          const SizedBox(width: 8),
-           GestureDetector(
-            onTap: () => _showCalendar(context, provider),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: provider.filterType == DateFilterType.custom 
-                    ? const Color(0xFF137FEC) 
-                    : Theme.of(context).dividerColor
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // "Hoy" Button
+        ElevatedButton(
+          onPressed: () {
+            provider.setDate(DateTime.now());
+            provider.setFilterType(DateFilterType.day);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: provider.filterType == DateFilterType.day && isSameDay(provider.selectedDate, DateTime.now()) 
+              ? Theme.of(context).primaryColor 
+              : Theme.of(context).cardColor,
+            foregroundColor: provider.filterType == DateFilterType.day && isSameDay(provider.selectedDate, DateTime.now()) 
+              ? Colors.white 
+              : Theme.of(context).hintColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          child: const Text('Hoy', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+
+        // Date Display & Range Picker
+        GestureDetector(
+          onTap: () async {
+            final DateTimeRange? picked = await showDateRangePicker(
+              context: context,
+              locale: const Locale('es', 'MX'), // Verify locale
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2030),
+              initialDateRange: provider.filterType == DateFilterType.custom ? provider.customDateRange : null,
+
+            );
+            if (picked != null) {
+              provider.setCustomDateRange(picked);
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: provider.filterType == DateFilterType.custom ? Theme.of(context).primaryColor.withOpacity(0.1) : Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: provider.filterType == DateFilterType.custom ? Theme.of(context).primaryColor : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.date_range, 
+                  size: 20, 
+                  color: provider.filterType == DateFilterType.custom ? Theme.of(context).primaryColor : Colors.grey
                 ),
-                color: provider.filterType == DateFilterType.custom 
-                    ? const Color(0xFF137FEC).withOpacity(0.2) 
-                    : Colors.transparent,
-              ),
-              child: Icon(
-                Icons.calendar_month, 
-                size: 20, 
-                color: provider.filterType == DateFilterType.custom 
-                    ? const Color(0xFF137FEC) 
-                    : Theme.of(context).iconTheme.color
-              ),
+                if (provider.filterType == DateFilterType.custom && provider.customDateRange != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '${DateFormat('d MMM').format(provider.customDateRange!.start)} - ${DateFormat('d MMM').format(provider.customDateRange!.end)}',
+                    style: TextStyle(
+                      color: provider.filterType == DateFilterType.custom ? Theme.of(context).primaryColor : Colors.grey,
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildFilterChip(String label, DateFilterType type, TransactionProvider provider) {
-    final isSelected = provider.filterType == type;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return GestureDetector(
-      onTap: () => provider.setFilterType(type),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF137FEC) : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-          border: isSelected ? null : Border.all(color: Theme.of(context).dividerColor),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
+  bool isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Future<void> _showCalendar(BuildContext context, TransactionProvider provider) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: provider.selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: Theme.of(context).primaryColor,
-              onPrimary: Colors.white,
-              surface: const Color(0xFF101922),
-              onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: const Color(0xFF101922),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      provider.setDate(picked); // Set the specific date
-      provider.setFilterType(DateFilterType.day); // Switch to day view for that date
-    }
-  }
 
   Widget _buildTotalBalance(TransactionProvider provider, NumberFormat currencyFormat) {
     final balance = provider.filteredBalance;
@@ -228,8 +211,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       childAspectRatio: 1.1, 
       children: [
         _buildSummaryCard(
-          title: 'Efectivo en Caja',
-          amount: currencyFormat.format(txProvider.totalCashIncome),
+          title: 'Efectivo', // Renamed from Efectivo en caja
+          amount: currencyFormat.format(txProvider.dailyCashIncome),
           icon: Icons.payments,
           color: const Color(0xFF10B981),
         ),

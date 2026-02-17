@@ -14,53 +14,46 @@ class IncomeScreen extends StatefulWidget {
 
 class _IncomeScreenState extends State<IncomeScreen> {
   int _selectedFilterIndex = 0; // 0: All, 1: Cash, 2: Digital (Card + Transfer)
+  TransactionType _selectedType = TransactionType.income;
 
-  void _selectDate(BuildContext context) async {
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: provider.selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: Theme.of(context).primaryColor,
-              onPrimary: Colors.white,
-              surface: const Color(0xFF101922),
-              onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: const Color(0xFF101922),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != provider.selectedDate) {
-      provider.setDate(picked);
-    }
-  }
+  /* Unused methods removed */
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TransactionProvider>(context);
     final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '\$');
-    final dateFormat = DateFormat('EEE, d MMM', 'es_MX'); // Ensure locale setup in main
+    final dateFormat = DateFormat('EEE, d MMM', 'es_MX');
     
-    // Filter logic
-    List<Transaction> displayTransactions = provider.incomeTransactionsByDate;
-    if (_selectedFilterIndex == 1) {
-       displayTransactions = displayTransactions.where((tx) => tx.category == TransactionCategory.salesCash).toList();
-    } else if (_selectedFilterIndex == 2) {
-       displayTransactions = displayTransactions.where((tx) => 
-         tx.category == TransactionCategory.salesCard || 
-         tx.category == TransactionCategory.salesTransfer
-       ).toList();
+    // Select Source List
+    List<Transaction> displayTransactions;
+    if (_selectedType == TransactionType.income) {
+      displayTransactions = provider.incomeTransactions;
+    } else {
+      displayTransactions = provider.expenseTransactions;
+    }
+
+    // Filter logic (Only for Income currently)
+    if (_selectedType == TransactionType.income) {
+      if (_selectedFilterIndex == 1) {
+         displayTransactions = displayTransactions.where((tx) => tx.category == TransactionCategory.salesCash).toList();
+      } else if (_selectedFilterIndex == 2) {
+         displayTransactions = displayTransactions.where((tx) => 
+           tx.category == TransactionCategory.salesCard || 
+           tx.category == TransactionCategory.salesTransfer
+         ).toList();
+      }
     }
     
     // Sort by latest
     displayTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+    // Calculate totals for Summary Card
+    double totalAmount = 0;
+    if (_selectedType == TransactionType.income) {
+      totalAmount = provider.dailyTotalIncome;
+    } else {
+      totalAmount = displayTransactions.fold(0, (sum, tx) => sum + tx.amount);
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -76,30 +69,19 @@ class _IncomeScreenState extends State<IncomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Ingresos', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                    GestureDetector(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Theme.of(context).dividerColor),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 14, color: Theme.of(context).primaryColor),
-                            const SizedBox(width: 8),
-                            Text(
-                              isSameDay(provider.selectedDate, DateTime.now()) 
-                                ? 'Hoy, ${dateFormat.format(provider.selectedDate)}' 
-                                : dateFormat.format(provider.selectedDate),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(Icons.expand_more, size: 14, color: Colors.grey.shade400),
-                          ],
-                        ),
+                    Text(_selectedType == TransactionType.income ? 'Ingresos' : 'Egresos', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+                    // Type Toggle
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                      ),
+                      child: Row(
+                        children: [
+                           _buildTypeToggle(TransactionType.income, Icons.arrow_downward),
+                           _buildTypeToggle(TransactionType.expense, Icons.arrow_upward),
+                        ],
                       ),
                     ),
                   ],
@@ -110,14 +92,16 @@ class _IncomeScreenState extends State<IncomeScreen> {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF137FEC), Color(0xFF2563EB)],
+                      colors: _selectedType == TransactionType.income 
+                          ? [const Color(0xFF137FEC), const Color(0xFF2563EB)]
+                          : [const Color(0xFFEF4444), const Color(0xFFB91C1C)], // Red for expenses
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF137FEC).withOpacity(0.2),
+                        color: (_selectedType == TransactionType.income ? const Color(0xFF137FEC) : const Color(0xFFEF4444)).withOpacity(0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -137,19 +121,20 @@ class _IncomeScreenState extends State<IncomeScreen> {
                         padding: const EdgeInsets.all(24.0),
                         child: Column(
                           children: [
-                            const Text('Total recaudado', style: TextStyle(color: Color(0xFFDBEAFE), fontSize: 14, fontWeight: FontWeight.w500)),
+                            Text(_selectedType == TransactionType.income ? 'Total recaudado' : 'Total gastado', style: const TextStyle(color: Color(0xFFDBEAFE), fontSize: 14, fontWeight: FontWeight.w500)),
                             const SizedBox(height: 4),
-                            Text(currencyFormat.format(provider.dailyTotalIncome), style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: -1)),
+                            Text(currencyFormat.format(totalAmount), style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: -1)),
                             const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 8.0,
-                                runSpacing: 8.0,
-                                children: [
-                                  _buildSummaryBadge(Icons.payments, 'Efec: ${currencyFormat.format(provider.dailyCashIncome)}'),
-                                  _buildSummaryBadge(Icons.credit_card, 'Tarj: ${currencyFormat.format(provider.dailyCardIncome)}'),
-                                  _buildSummaryBadge(Icons.account_balance, 'Transf: ${currencyFormat.format(provider.dailyTransferIncome)}'),
-                                ],
-                              ),
+                              if (_selectedType == TransactionType.income)
+                                Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 8.0,
+                                  children: [
+                                    _buildSummaryBadge(Icons.payments, 'Efec: ${currencyFormat.format(provider.dailyCashIncome)}'),
+                                    _buildSummaryBadge(Icons.credit_card, 'Tarj: ${currencyFormat.format(provider.dailyCardIncome)}'),
+                                    _buildSummaryBadge(Icons.account_balance, 'Transf: ${currencyFormat.format(provider.dailyTransferIncome)}'),
+                                  ],
+                                ),
                           ],
                         ),
                       ),
@@ -157,21 +142,22 @@ class _IncomeScreenState extends State<IncomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Segmented Control Tabs
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
+                // Segmented Control Tabs (Only for Income)
+                if (_selectedType == TransactionType.income)
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        _buildSegmentTab('Todos', 0),
+                        _buildSegmentTab('Efectivo', 1),
+                        _buildSegmentTab('Tarj/Transf', 2),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      _buildSegmentTab('Todos', 0),
-                      _buildSegmentTab('Efectivo', 1),
-                      _buildSegmentTab('Tarj/Transf', 2),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -203,10 +189,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                 }
                 
                 if (displayTransactions.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.only(top: 40.0),
-                      child: Text('No hay ingresos registrados', style: TextStyle(color: Colors.grey)),
+                      padding: const EdgeInsets.only(top: 40.0),
+                      child: Text(_selectedType == TransactionType.income ? 'No hay ingresos registrados' : 'No hay egresos registrados', style: const TextStyle(color: Colors.grey)),
                     ),
                   );
                 }
@@ -228,15 +214,35 @@ class _IncomeScreenState extends State<IncomeScreen> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
 
-            builder: (context) => const AddTransactionSheet(type: TransactionType.income),
+            builder: (context) => AddTransactionSheet(type: _selectedType), // Use selected type
           );
         },
-        backgroundColor: Theme.of(context).primaryColor,
-        child: const Icon(Icons.add, size: 32, color: Colors.white),
+        backgroundColor: _selectedType == TransactionType.income ? Theme.of(context).primaryColor : const Color(0xFFEF4444),
+        child: Icon(_selectedType == TransactionType.income ? Icons.add : Icons.remove, size: 32, color: Colors.white),
       ),
     );
   }
   
+  Widget _buildTypeToggle(TransactionType type, IconData icon) {
+    final isSelected = _selectedType == type;
+    final color = isSelected 
+        ? (type == TransactionType.income ? Theme.of(context).primaryColor : const Color(0xFFEF4444)) 
+        : Colors.grey;
+    final bgColor = isSelected ? color.withOpacity(0.1) : Colors.transparent;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedType = type),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+    );
+  }
+
   Widget _buildSegmentTab(String label, int index) {
     final isSelected = _selectedFilterIndex == index;
     return Expanded(
@@ -293,8 +299,11 @@ class _IncomeScreenState extends State<IncomeScreen> {
     IconData icon;
     Color color = const Color(0xFF10B981); // Emerald
     
-    switch (tx.category) {
+    if (tx.type == TransactionType.expense) {
+      color = const Color(0xFFEF4444); // Red
+    }
 
+    switch (tx.category) {
       case TransactionCategory.salesCash:
         icon = Icons.payments;
         break;
@@ -306,9 +315,21 @@ class _IncomeScreenState extends State<IncomeScreen> {
         icon = Icons.account_balance;
         color = Colors.purpleAccent;
         break;
+      case TransactionCategory.supplier:
+        icon = Icons.local_shipping;
+        break;
+      case TransactionCategory.various: // Add explicit case for various if needed, or let it fall to default
+        icon = Icons.category;
+        break;
       default:
-        icon = Icons.attach_money;
+         if (tx.type == TransactionType.expense) {
+           icon = Icons.money_off; 
+         } else {
+           icon = Icons.attach_money;
+         }
     }
+    
+    final isIncome = tx.type == TransactionType.income;
 
     return Dismissible(
       key: Key(tx.id),
@@ -328,7 +349,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF1E293B),
-            title: const Text('¿Eliminar ingreso?', style: TextStyle(color: Colors.white)),
+            title: Text(isIncome ? '¿Eliminar ingreso?' : '¿Eliminar egreso?', style: const TextStyle(color: Colors.white)),
             content: Text(
               'Estás a punto de eliminar "${tx.title}". Esta acción no se puede deshacer.',
               style: const TextStyle(color: Colors.grey),
@@ -349,7 +370,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
       onDismissed: (direction) {
         Provider.of<TransactionProvider>(context, listen: false).deleteTransaction(tx.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ingreso "${tx.title}" eliminado')),
+          SnackBar(content: Text(isIncome ? 'Ingreso eliminado' : 'Egreso eliminado')),
         );
       },
       child: Container(

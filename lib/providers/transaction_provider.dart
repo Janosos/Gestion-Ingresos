@@ -108,8 +108,11 @@ class TransactionProvider with ChangeNotifier {
         return date.year == now.year && date.month == now.month;
       case DateFilterType.custom:
          if (_customDateRange == null) return false;
-         return date.isAfter(_customDateRange!.start.subtract(const Duration(seconds: 1))) && 
-                date.isBefore(_customDateRange!.end.add(const Duration(days: 1))); // Inclusive end day
+         // Inclusive check
+         final start = _customDateRange!.start;
+         final end = _customDateRange!.end.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1)); // End of the day
+         return date.isAfter(start.subtract(const Duration(seconds: 1))) && 
+                date.isBefore(end);
     }
   }
 
@@ -144,6 +147,13 @@ class TransactionProvider with ChangeNotifier {
   // Update existing getters to use filteredTransactions
   List<Transaction> get incomeTransactions {
     return filteredTransactions.where((tx) => tx.type == TransactionType.income).toList();
+  }
+
+  List<Transaction> get expenseTransactions {
+    return filteredTransactions.where((tx) => 
+      tx.type == TransactionType.expense && 
+      tx.category != TransactionCategory.supplier
+    ).toList();
   }
   
   List<Transaction> get supplierTransactions {
@@ -180,14 +190,17 @@ class TransactionProvider with ChangeNotifier {
     return supplierTransactions.fold(0, (sum, tx) => sum + tx.amount);
   }
   
-  // Balance based on FILTER
+  // Balance based on FILTER - EXCLUDING SUPPLIERS
   double get filteredBalance {
     double total = 0;
     for (var tx in filteredTransactions) {
       if (tx.type == TransactionType.income) {
         total += tx.amount;
       } else {
-        total -= tx.amount;
+        // Only subtract if NOT a supplier payment
+        if (tx.category != TransactionCategory.supplier) {
+          total -= tx.amount;
+        }
       }
     }
     return total;

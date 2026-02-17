@@ -64,16 +64,19 @@ class _MainScaffoldState extends State<MainScaffold> {
     final isSelected = _currentIndex == index;
     final color = isSelected ? Theme.of(context).primaryColor : Colors.grey.shade400; // Muted color from HTML
     
-    return InkWell(
-      onTap: () => _onItemTapped(index),
-      child: SizedBox(
-        width: 50, // Reduced touch target to fit more items
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onItemTapped(index),
         child: Column(
+          mainAxisSize: MainAxisSize.min, // Use min to center vertically
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 24), // Slightly smaller icon
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w500)), // Smaller text
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w500)), 
+            ),
           ],
         ),
       ),

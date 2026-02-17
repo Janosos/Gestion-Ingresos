@@ -28,38 +28,10 @@ class SupplierScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: Column(
               children: [
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Proveedores', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                    // Note: Date is controlled globally (or by Income screen?), 
-                    // user said "este modulo si se ve afectado por la fecha seleccionada". 
-                    // Does this screen need its own date picker or reuse the one from Dashboard/Income?
-                    // Typically if it's affected, it should show what date is selected.
-                    // Let's add the date display/picker here too for consistency if they navigate directly.
-                     GestureDetector(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Theme.of(context).dividerColor),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 14, color: Theme.of(context).primaryColor),
-                            const SizedBox(width: 8),
-                            Text(
-                              isSameDay(provider.selectedDate, DateTime.now()) 
-                                ? 'Hoy, ${dateFormat.format(provider.selectedDate)}' 
-                                : dateFormat.format(provider.selectedDate),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    Text('Proveedores', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -203,6 +175,7 @@ class SupplierScreen extends StatelessWidget {
           ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showModalBottomSheet(
@@ -212,44 +185,15 @@ class SupplierScreen extends StatelessWidget {
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-
-            builder: (context) => const AddTransactionSheet(type: TransactionType.expense),
+            builder: (context) => const AddTransactionSheet(
+              type: TransactionType.expense,
+              forceCategory: TransactionCategory.supplier,
+            ),
           );
         },
         backgroundColor: const Color(0xFFEF4444),
         child: const Icon(Icons.add, size: 32, color: Colors.white),
       ),
     );
-  }
-
-  void _selectDate(BuildContext context) async {
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: provider.selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: Theme.of(context).primaryColor,
-              onPrimary: Colors.white,
-              surface: const Color(0xFF101922),
-              onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: const Color(0xFF101922),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != provider.selectedDate) {
-      provider.setDate(picked);
-    }
-  }
-
-  bool isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

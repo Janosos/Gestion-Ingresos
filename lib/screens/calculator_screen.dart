@@ -182,16 +182,20 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: color ?? defaultBtnColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              elevation: 2, // Add slight elevation for light mode visibility
+              padding: EdgeInsets.zero, // Remove fixed padding
+              minimumSize: const Size(double.infinity, double.infinity), // Fill the container
+              elevation: 2, 
               shadowColor: Colors.black12,
             ),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: defaultTxtColor,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: defaultTxtColor,
+                ),
               ),
             ),
           ),
@@ -206,7 +210,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           onTap: onTap,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8), // Reduce/Remove vertical padding, use centering
+            height: double.infinity, // Fill height of row
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(16),
@@ -218,11 +223,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 )
               ],
             ),
+            alignment: Alignment.center,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(icon, color: Colors.white, size: 28),
                 const SizedBox(height: 4),
-                Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                Text(label, 
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)
+                ),
               ],
             ),
           ),
@@ -237,104 +247,113 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
            SizedBox(height: MediaQuery.of(context).padding.top),
            // Display Area
            Expanded(
-             flex: 2,
+             flex: 3,
              child: Container(
                width: double.infinity,
-               padding: const EdgeInsets.all(24),
+               padding: const EdgeInsets.all(16),
                alignment: Alignment.bottomRight,
-               child: Column(
-                 mainAxisAlignment: MainAxisAlignment.end,
-                 crossAxisAlignment: CrossAxisAlignment.end,
-                 children: [
-                   FittedBox(
-                     fit: BoxFit.scaleDown,
-                     alignment: Alignment.centerRight,
-                     child: Text(
+               child: FittedBox(
+                 fit: BoxFit.scaleDown,
+                 alignment: Alignment.centerRight,
+                 child: Column(
+                   mainAxisAlignment: MainAxisAlignment.end,
+                   crossAxisAlignment: CrossAxisAlignment.end,
+                   children: [
+                     Text(
                        _expression,
                        style: TextStyle(fontSize: 32, color: secondaryTextColor),
-                       maxLines: 1, // Changed to 1 line since we scale down
                      ),
-                   ),
-                   const SizedBox(height: 12),
-                   FittedBox(
-                     fit: BoxFit.scaleDown,
-                     alignment: Alignment.centerRight,
-                     child: Text(
+                     const SizedBox(height: 4),
+                     Text(
                        _result == '0' && _expression.isNotEmpty && double.tryParse(_expression) != null 
-                           ? _expression // Show raw number as main if just typed
+                           ? _expression 
                            : _result,
                        style: TextStyle(fontSize: 56, fontWeight: FontWeight.bold, color: textColor),
                      ),
-                   ),
-                 ],
+                   ],
+                 ),
                ),
              ),
            ),
            
            Divider(height: 1, color: isDark ? Colors.white10 : Colors.black12),
            
-           // Action Buttons
-           Padding(
-             padding: const EdgeInsets.all(12.0),
-             child: Row(
-               children: [
-                 buildActionButton(const Color(0xFF10B981), Icons.add, 'Ingreso', () => _onAction(context, 'income')),
-                 buildActionButton(const Color(0xFFEF4444), Icons.remove, 'Egreso', () => _onAction(context, 'expense')),
-                 buildActionButton(const Color(0xFFF59E0B), Icons.person_add, 'Cobro pendiente', () => _onAction(context, 'receivable')),
-               ],
-             ),
-           ),
+            // Action Buttons - Fixed height to prevent squashing
+            SizedBox(
+              height: 64, 
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                child: Row(
+                  children: [
+                    buildActionButton(const Color(0xFF10B981), Icons.add, 'Ingreso', () => _onAction(context, 'income')),
+                    buildActionButton(const Color(0xFFEF4444), Icons.remove, 'Egreso', () => _onAction(context, 'expense')),
+                    buildActionButton(const Color(0xFFF59E0B), Icons.person_add, 'Fiar', () => _onAction(context, 'receivable')),
+                  ],
+                ),
+              ),
+            ),
 
            Divider(height: 1, color: isDark ? Colors.white10 : Colors.black12),
 
            // Keypad
            Expanded(
-             flex: 4,
+             flex: 5,
+             // No flex value needed, just take remaining space
              child: Padding(
                padding: const EdgeInsets.all(8.0),
-               child: Column(
-                 children: [
-                   Row(
-                     children: [
-                       buildButton('C', textColor: const Color(0xFFEF4444)),
-                       buildButton('÷', textColor: const Color(0xFF2563EB)),
-                       buildButton('x', textColor: const Color(0xFF2563EB)),
-                       buildButton('⌫', textColor: const Color(0xFFEF4444)),
-                     ],
-                   ),
-                   Row(
-                     children: [
-                       buildButton('7'),
-                       buildButton('8'),
-                       buildButton('9'),
-                       buildButton('-', textColor: const Color(0xFF2563EB)),
-                     ],
-                   ),
-                   Row(
-                     children: [
-                       buildButton('4'),
-                       buildButton('5'),
-                       buildButton('6'),
-                       buildButton('+', textColor: const Color(0xFF2563EB)),
-                     ],
-                   ),
-                   Row(
-                     children: [
-                       buildButton('1'),
-                       buildButton('2'),
-                       buildButton('3'),
-                       buildButton('=', color: const Color(0xFF2563EB), textColor: Colors.white), // Equal can be highlighted
-                     ],
-                   ),
-                    Row(
-                     children: [
-                       buildButton('%'),
-                       buildButton('0'),
-                       buildButton('.'),
-                     ],
-                   ),
-                 ],
-               ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          buildButton('C', textColor: const Color(0xFFEF4444)),
+                          buildButton('÷', textColor: const Color(0xFF2563EB)),
+                          buildButton('x', textColor: const Color(0xFF2563EB)),
+                          buildButton('⌫', textColor: const Color(0xFFEF4444)),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          buildButton('7'),
+                          buildButton('8'),
+                          buildButton('9'),
+                          buildButton('-', textColor: const Color(0xFF2563EB)),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          buildButton('4'),
+                          buildButton('5'),
+                          buildButton('6'),
+                          buildButton('+', textColor: const Color(0xFF2563EB)),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          buildButton('1'),
+                          buildButton('2'),
+                          buildButton('3'),
+                          buildButton('=', color: const Color(0xFF2563EB), textColor: Colors.white),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          buildButton('%'),
+                          buildButton('0', flex: 2), // Span 2 columns to align grid
+                          buildButton('.'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
              ),
            ),
            SizedBox(height: MediaQuery.of(context).padding.bottom + 16), // Bottom safe area

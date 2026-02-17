@@ -59,4 +59,3 @@ enum TransactionCategory {
   supplier,
   various,
 }
-

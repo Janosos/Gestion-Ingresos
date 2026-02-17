@@ -25,7 +25,7 @@ class _AddReceivableSheetState extends State<AddReceivableSheet> {
     super.initState();
     _nameController = TextEditingController(text: widget.prefilledName);
     _amountController = TextEditingController(
-      text: widget.initialAmount != null ? widget.initialAmount.toString() : '',
+      text: (widget.initialAmount != null && widget.initialAmount! > 0) ? widget.initialAmount.toString() : '',
     );
   }
 
@@ -40,14 +40,15 @@ class _AddReceivableSheetState extends State<AddReceivableSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Nuevo Pendiente', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text('Fiar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Colors.grey)),
             ],
           ),
@@ -169,6 +170,7 @@ class _AddReceivableSheetState extends State<AddReceivableSheet> {
           ),
         ],
       ),
+     ),
     );
   }
 }
